@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "faceless": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "faceless-mcp"
+      ]
+    }
+  }
+}

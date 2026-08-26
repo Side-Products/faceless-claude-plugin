@@ -1,0 +1,15 @@
+{
+  "name": "faceless",
+  "description": "Official Faceless.so plugin: AI faceless video creation, automated series and social publishing.",
+  "owner": {
+    "name": "Faceless.so",
+    "url": "https://faceless.so"
+  },
+  "plugins": [
+    {
+      "name": "faceless",
+      "source": "./",
+      "description": "Create, render and publish AI faceless videos with Faceless.so."
+    }
+  ]
+}

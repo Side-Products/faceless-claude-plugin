@@ -1,0 +1,19 @@
+{
+  "name": "faceless",
+  "version": "1.1.9",
+  "description": "Create, render and publish AI faceless videos with Faceless.so.",
+  "author": {
+    "name": "Faceless.so",
+    "url": "https://faceless.so"
+  },
+  "homepage": "https://faceless.so/developers",
+  "repository": "https://github.com/Side-Products/faceless-claude-plugin",
+  "license": "MIT",
+  "keywords": [
+    "faceless",
+    "ai-video",
+    "youtube",
+    "tiktok",
+    "video-generation"
+  ]
+}
