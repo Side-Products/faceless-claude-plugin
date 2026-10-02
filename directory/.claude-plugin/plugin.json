@@ -1,19 +1,19 @@
 {
   "name": "faceless",
   "version": "1.1.23",
-  "description": "Create, render and publish AI faceless videos with Faceless.so.",
+  "description": "Manage, render, schedule and publish your Faceless.so videos and read how they perform.",
   "author": {
     "name": "Faceless.so",
     "url": "https://faceless.so"
   },
-  "homepage": "https://faceless.so/developers",
+  "homepage": "https://faceless.so/developers/docs/mcp",
   "repository": "https://github.com/Side-Products/faceless-claude-plugin",
   "license": "MIT",
   "keywords": [
     "faceless",
-    "ai-video",
     "youtube",
     "tiktok",
-    "video-generation"
+    "social-media",
+    "scheduling"
   ]
 }

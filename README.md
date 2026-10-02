@@ -4,7 +4,7 @@ Create, render and publish AI faceless videos with [Faceless.so](https://faceles
 
 ## Install
 
-Add **Faceless** from the plugin directory in Claude (Customize > Plugins), or in Claude Code:
+In Claude Code:
 
 ```
 /plugin marketplace add Side-Products/faceless-claude-plugin
