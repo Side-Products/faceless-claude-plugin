@@ -10,6 +10,9 @@
   "repository": "https://github.com/Side-Products/faceless-claude-plugin",
   "license": "MIT",
   "privacyPolicyUrl": "https://faceless.so/privacy",
+  "termsOfServiceUrl": "https://faceless.so/terms",
+  "supportUrl": "https://faceless.so/contact",
+  "documentationUrl": "https://faceless.so/developers/docs/mcp",
   "keywords": [
     "faceless",
     "youtube",
