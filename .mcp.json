@@ -1,11 +1,8 @@
 {
   "mcpServers": {
     "faceless": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "faceless-mcp"
-      ]
+      "type": "http",
+      "url": "https://faceless.so/api/v1/mcp"
     }
   }
 }

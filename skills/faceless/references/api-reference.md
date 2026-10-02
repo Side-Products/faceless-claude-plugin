@@ -6,7 +6,7 @@ Base URL: `https://faceless.so/api/v1`
 
 Authentication: `Authorization: Bearer fl_live_...` (or `X-API-Key`). Create keys at https://faceless.so/developers.
 
-Envelope: success responses are `{ "success": true, "data": ..., "pagination"?: { page, limit, total } }`. Errors are `{ "success": false, "error": { "type", "message" } }` with types: `invalid_input`, `unauthorized`, `forbidden_scope`, `not_found`, `conflict`, `insufficient_credits`, `usage_limit_reached`, `rate_limited`, `internal_error`.
+Envelope: success responses are `{ "success": true, "data": ..., "pagination"?: { page, limit, total } }`. Errors are `{ "success": false, "error": { "type", "message" } }` with types: `invalid_input`, `unauthorized`, `forbidden_scope`, `not_found`, `conflict`, `insufficient_credits`, `payment_failed`, `usage_limit_reached`, `rate_limited`, `internal_error`.
 
 ## me
 
@@ -35,19 +35,16 @@ Response:
   "success": true,
   "data": {
     "team": {
-      "id": "665f1b2a9c31a2b3c4d5e601",
       "name": "My Channel",
       "credits": 340
     },
     "plan": "creator",
     "auth": {
       "via": "api_key",
-      "keyPrefix": "fl_live_a1b2c3d4",
       "scopes": [
         "videos:read",
         "videos:write"
-      ],
-      "legacy": false
+      ]
     }
   }
 }
@@ -89,7 +86,6 @@ Response:
     "balance": 340,
     "history": [
       {
-        "id": "665f1b2a9c31a2b3c4d5e701",
         "credits": -50,
         "type": "spending",
         "description": "Faceless video (motion_lite)",
@@ -101,6 +97,50 @@ Response:
     "page": 1,
     "limit": 20,
     "total": 1
+  }
+}
+```
+
+### Buy a credit pack with an agent payment token
+
+`POST /credits`
+
+Buys a credit pack and adds the credits to the team immediately, paid with a Stripe Shared Payment Token (spt_...) that the customer approved in their Link agent wallet. Packs: pack_10 ($10, 100 credits), pack_25 ($25, 275), pack_50 ($50, 600); active subscribers get more credits per pack at their plan rate. Request the token for the Faceless.so Stripe profile (profile_61UDMKC11wsLfeXaMA6UDMKCL0SQKAF3aHKCFz33IPL6) with a USD max_amount of at least the pack price. Tokens are single use: retrying with the same token never charges twice. A declined, expired or already used token returns 402 payment_failed.
+
+- Scopes: `credits:write`
+- Credits: none (adds credits; charges the payment token the pack price in USD)
+- Rate limit: 5 per 60s
+- Supports `Idempotency-Key` header
+- CLI: `faceless buy-credits`
+- MCP tool: `faceless_buy_credits`
+
+Body fields:
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `packId` | `pack_10` \| `pack_25` \| `pack_50` | yes | Credit pack to buy: pack_10 ($10), pack_25 ($25) or pack_50 ($50) |
+| `paymentToken` | string | yes | Stripe Shared Payment Token granted to Faceless.so by the customer's agent wallet |
+
+Example:
+
+```bash
+curl -s -X POST "https://faceless.so/api/v1/credits" \
+  -H "Authorization: Bearer $FACELESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"packId":"pack_10","paymentToken":"spt_1Rx2abc"}'
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "packId": "pack_10",
+    "amountUsd": 10,
+    "creditsAdded": 100,
+    "balance": 440,
+    "paymentIntentId": "pi_3Rx2abc"
   }
 }
 ```
@@ -582,7 +622,7 @@ Body fields:
 | `generateThumbnails` | boolean | no | Generate 3 AI thumbnail variants for every episode and auto-select the best. Free. Defaults to true. |
 | `thumbnailSettings` | object | no | Thumbnail generation options. Ignored when generateThumbnails is false. |
 | `autoPostTime` | string | no | Daily auto-post time "HH:mm" in the series timezone |
-| `postingDays` | array | no | Days of the week to post, e.g. ["Monday","Wednesday"]. Omit for every day |
+| `postingDays` | array | no | Days of the week to post as numbers, 0 is Sunday and 6 is Saturday, e.g. [1,3] for Monday and Wednesday. Omit for every day |
 | `timezone` | string | no | IANA timezone for scheduling, e.g. America/New_York |
 | `captionStyle` | string | no | Caption theme name. Full list: GET /options?kind=captionThemes |
 | `subreddit` | string | no | Subreddit to pull posts from when source is "Reddit post" |
@@ -592,6 +632,7 @@ Body fields:
 | `brollModel` | string | no | Generation model for visuals: storyboard, motion_lite or motion_pro |
 | `showEmojis` | boolean | no | Overlay emojis on captions |
 | `enableBackgroundMusic` | boolean | no | Mix background music under the narration |
+| `enableVoiceover` | boolean | no | Story Slides and News Slides only: an AI voice reads each slide, using `voice` (a default voice when omitted). Defaults to false (music only) |
 | `backgroundMusicMood` | string | no | Background music mood. Full list: GET /options?kind=music |
 | `hashtags` | string | no | Hashtags appended to post captions |
 | `tone` | string | no | Writing tone for generated scripts |
@@ -719,7 +760,7 @@ Body fields:
 | `generateThumbnails` | boolean | no | Generate 3 AI thumbnail variants for every episode and auto-select the best. Free. Defaults to true. |
 | `thumbnailSettings` | object | no | Thumbnail generation options. Ignored when generateThumbnails is false. |
 | `autoPostTime` | string | no | Daily auto-post time "HH:mm" in the series timezone |
-| `postingDays` | array | no | Days of the week to post, e.g. ["Monday","Wednesday"]. Omit for every day |
+| `postingDays` | array | no | Days of the week to post as numbers, 0 is Sunday and 6 is Saturday, e.g. [1,3] for Monday and Wednesday. Omit for every day |
 | `timezone` | string | no | IANA timezone for scheduling, e.g. America/New_York |
 | `captionStyle` | string | no | Caption theme name. Full list: GET /options?kind=captionThemes |
 | `subreddit` | string | no | Subreddit to pull posts from when source is "Reddit post" |
@@ -729,6 +770,7 @@ Body fields:
 | `brollModel` | string | no | Generation model for visuals: storyboard, motion_lite or motion_pro |
 | `showEmojis` | boolean | no | Overlay emojis on captions |
 | `enableBackgroundMusic` | boolean | no | Mix background music under the narration |
+| `enableVoiceover` | boolean | no | Story Slides and News Slides only: an AI voice reads each slide, using `voice` (a default voice when omitted). Defaults to false (music only) |
 | `backgroundMusicMood` | string | no | Background music mood. Full list: GET /options?kind=music |
 | `hashtags` | string | no | Hashtags appended to post captions |
 | `tone` | string | no | Writing tone for generated scripts |
@@ -1060,22 +1102,23 @@ Response:
   "data": {
     "youtube": [
       {
-        "id": "665f1b2a9c31a2b3c4d5ee01",
-        "channelName": "Deep Sea Facts"
+        "authId": "665f1b2a9c31a2b3c4d5ee01",
+        "label": "Deep Sea Facts",
+        "isDefault": true
       }
     ],
     "tiktok": [
       {
-        "id": "665f1b2a9c31a2b3c4d5e901",
-        "username": "mychannel",
-        "status": "connected"
+        "authId": "665f1b2a9c31a2b3c4d5e901",
+        "label": "mychannel",
+        "isDefault": true
       }
     ],
     "instagram": [
       {
-        "id": "665f1b2a9c31a2b3c4d5e902",
-        "username": "mychannel",
-        "status": "connected"
+        "authId": "665f1b2a9c31a2b3c4d5e902",
+        "label": "mychannel",
+        "isDefault": false
       }
     ]
   }
@@ -1088,7 +1131,7 @@ Response:
 
 `GET /voices`
 
-Returns the text-to-speech voices available for narration, including the team's custom cloned voices. Use a voice's id as voiceId in createVideo or voice in createSeries.
+Returns the text-to-speech voices available for narration, including the team's custom cloned voices and Recommended Studio Quality voices. Recommended ids are opaque: pass the returned id unchanged and Faceless will resolve the appropriate ElevenLabs model. Use a voice's id as voiceId in createVideo or voice in createSeries.
 
 - Scopes: `catalog:read`
 - Credits: none
@@ -1109,10 +1152,22 @@ Response:
   "success": true,
   "data": [
     {
-      "id": "EXAVITQu4vr4xnSDxMaL",
-      "name": "Sarah",
+      "id": "eleven_quality:EXAVITQu4vr4xnSDxMaL",
+      "baseVoiceId": "EXAVITQu4vr4xnSDxMaL",
+      "name": "Sarah - Studio Quality",
       "previewUrl": "https://storage.googleapis.com/eleven-public-prod/premade/voices/EXAVITQu4vr4xnSDxMaL.mp3",
-      "isCustom": false
+      "labels": {
+        "language": "en",
+        "gender": "female",
+        "accent": "american"
+      },
+      "isCustom": false,
+      "isRecommended": true,
+      "qualityTier": "studio",
+      "modelPolicy": "quality_auto",
+      "targetLanguages": [
+        "en"
+      ]
     }
   ]
 }
@@ -1225,7 +1280,7 @@ Query parameters:
 | --- | --- | --- | --- |
 | `platform` | `youtube` \| `tiktok` \| `instagram` \| `facebook` | no | Filter to one platform |
 | `authId` | string | no | Filter to one connected account |
-| `range` | integer | no | Trailing window in days (default 30) |
+| `range` | mixed | no | Trailing analytics window: 7, 28, or 90 days (default 28) |
 
 Example:
 
@@ -1240,16 +1295,292 @@ Response:
 {
   "success": true,
   "data": {
-    "totals": {
-      "posts": 42,
-      "views": 128530,
-      "likes": 9210
+    "rangeDays": 28,
+    "rollup": {
+      "rangeDays": 28,
+      "viewsGained": 12500,
+      "totalViews": 128530,
+      "postsSynced": 42,
+      "ready": true
     },
-    "platforms": {
-      "youtube": {
-        "posts": 20,
-        "views": 88000
+    "windows": {
+      "d7": {
+        "viewsGained": 3200,
+        "ready": true
+      },
+      "d28": {
+        "viewsGained": 12500,
+        "ready": true
       }
+    },
+    "byPlatform": {
+      "youtube": {
+        "totalViews": 88000,
+        "postsSynced": 20,
+        "viewsGained28d": 9400
+      }
+    },
+    "topPosts": [
+      {
+        "platform": "youtube",
+        "title": "Deep sea rivers",
+        "views": 42000,
+        "postUrl": "https://youtube.com/shorts/example"
+      }
+    ],
+    "totals": {
+      "totalViews": 128530,
+      "postsSynced": 42,
+      "posts7d": 7
+    },
+    "timeseriesReady": true
+  }
+}
+```
+
+## ads
+
+### Search Meta ads shown in the EU and UK
+
+`GET /ads/search`
+
+Searches the official Meta Ad Library by keywords in the ad text or by one advertiser's exact Facebook Page ID. Meta only returns commercial ads delivered in the EU and UK, so the country is one of those or EU_UK for all of them. Returns up to 25 ads (copy variants, delivery dates, platforms, a public Meta link), a resultToken to save or brief any of them within 15 minutes, and an opaque nextCursor. Free; each team has a daily search allowance and cached repeats do not count against it. No media files are returned.
+
+- Scopes: `ads:read`
+- Credits: none
+- Rate limit: 10 per 60s
+- CLI: `faceless ads search`
+
+Query parameters:
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `q` | string | no | Words in the ad text. Send q or pageId, not both. |
+| `pageId` | string | no | One advertiser's exact Facebook Page ID (from its Ad Library link, view_all_page_id). |
+| `country` | `EU_UK` \| `AT` \| `BE` \| `BG` \| `HR` \| `CY` \| `CZ` \| `DK` \| `EE` \| `FI` \| `FR` \| `DE` \| `GR` \| `HU` \| `IE` \| `IT` \| `LV` \| `LT` \| `LU` \| `MT` \| `NL` \| `PL` \| `PT` \| `RO` \| `SK` \| `SI` \| `ES` \| `SE` \| `GB` | no | Where the ad was shown |
+| `mediaType` | `ALL` \| `IMAGE` \| `VIDEO` | no |  |
+| `platform` | `ALL` \| `FACEBOOK` \| `INSTAGRAM` \| `MESSENGER` \| `AUDIENCE_NETWORK` \| `THREADS` \| `WHATSAPP` | no |  |
+| `status` | `ACTIVE` \| `INACTIVE` \| `ALL` | no | ACTIVE: running now |
+| `cursor` | string | no | nextCursor from the previous page of the same search; keep every other parameter unchanged. |
+
+Example:
+
+```bash
+curl -s "https://faceless.so/api/v1/ads/search" \
+  -H "Authorization: Bearer $FACELESS_API_KEY"
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "adId": "2716161098763684",
+        "pageId": "123456789",
+        "pageName": "Example brand",
+        "bodies": [
+          "Turn one idea into a week of videos."
+        ],
+        "titles": [
+          "Videos on autopilot"
+        ],
+        "captions": [],
+        "descriptions": [],
+        "startedAt": "2026-08-01T00:00:00.000Z",
+        "stoppedAt": null,
+        "platforms": [
+          "FACEBOOK",
+          "INSTAGRAM"
+        ],
+        "mediaType": null,
+        "observedStatus": "ACTIVE",
+        "sourceUrl": "https://www.facebook.com/ads/library/?id=2716161098763684",
+        "fetchedAt": "2026-09-26T10:00:00.000Z",
+        "savedId": null
+      }
+    ],
+    "resultToken": "22df1b25-533f-4bd7-862a-aedc4a4ea0cc",
+    "expiresAt": "2026-09-26T10:15:00.000Z",
+    "nextCursor": "0b6f3c1e-8f4a-4c55-9e0b-7d2a1c9e4f10"
+  }
+}
+```
+
+### List the team's saved ads
+
+`GET /saved-ads`
+
+Returns the ads the team saved from Meta Ad Library searches, newest first, 24 per page, with each ad's details as Meta showed them when it was saved. Filter by one advertiser with pageId. Works even when fresh search is paused.
+
+- Scopes: `ads:read`
+- Credits: none
+- CLI: `faceless ads saved`
+
+Query parameters:
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `pageId` | string | no | Only this advertiser's ads |
+| `page` | integer | no |  |
+
+Example:
+
+```bash
+curl -s "https://faceless.so/api/v1/saved-ads" \
+  -H "Authorization: Bearer $FACELESS_API_KEY"
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": "665f1b2a9c31a2b3c4d5f001",
+        "ad": {
+          "adId": "2716161098763684",
+          "pageName": "Example brand"
+        },
+        "savedAt": "2026-09-26T10:01:00.000Z"
+      }
+    ],
+    "advertisers": [
+      {
+        "pageId": "123456789",
+        "pageName": "Example brand"
+      }
+    ],
+    "savedCount": 1,
+    "savedLimit": 500,
+    "page": 1,
+    "pages": 1
+  }
+}
+```
+
+### Save an ad from a search
+
+`POST /saved-ads`
+
+Saves one ad from a searchAds result to the team's saved ads, using that search's resultToken (valid 15 minutes; search again after that). Saving the same ad twice returns the first save. A team can keep 500 saved ads.
+
+- Scopes: `ads:write`
+- Credits: none
+- CLI: `faceless ads save`
+
+Body fields:
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `adId` | string | yes | adId from searchAds |
+| `resultToken` | string | yes | resultToken of the search page that returned the ad |
+
+Example:
+
+```bash
+curl -s -X POST "https://faceless.so/api/v1/saved-ads" \
+  -H "Authorization: Bearer $FACELESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"adId":"2716161098763684","resultToken":"22df1b25-533f-4bd7-862a-aedc4a4ea0cc"}'
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "665f1b2a9c31a2b3c4d5f001",
+    "ad": {
+      "adId": "2716161098763684",
+      "pageName": "Example brand"
+    },
+    "savedAt": "2026-09-26T10:01:00.000Z"
+  }
+}
+```
+
+### Remove a saved ad
+
+`DELETE /saved-ads/{id}`
+
+Removes one of the team's saved ads. An id the team does not have answers 404.
+
+- Scopes: `ads:write`
+- Credits: none
+- CLI: `faceless ads unsave`
+
+Example:
+
+```bash
+curl -s -X DELETE "https://faceless.so/api/v1/saved-ads/<id>" \
+  -H "Authorization: Bearer $FACELESS_API_KEY"
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "deleted": true
+  }
+}
+```
+
+### Write an ad brief for your brand from a competitor's ad
+
+`POST /ads/briefs`
+
+Writes an original ad brief (hook, promise, script, visual direction, call to action) for the team's brand, inspired by one ad from searchAds or the saved ads. Only the ad's approach carries over: every claim comes from the brand description you send, and the advertiser's name, offers, prices and results never appear. target sizes the script: motion (20 s motion-graphics ad), product-video (30 s narrated video), ugc (20 s creator talking to camera) or image (one static ad). Free; use the brief with createVideo or any other operation. 30 briefs per hour.
+
+- Scopes: `ads:write`
+- Credits: none
+- Rate limit: 30 per 3600s
+- CLI: `faceless ads brief`
+
+Body fields:
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `adId` | string | yes |  |
+| `resultToken` | string | no | From searchAds; send this or savedId |
+| `savedId` | string | no | A saved ad's id; send this or resultToken |
+| `target` | `motion` \| `product-video` \| `ugc` \| `image` | yes | What the brief is for |
+| `brand` | object | yes | Your brand |
+| `notes` | string | no | A real offer, a feature to lead with, a tone |
+
+Example:
+
+```bash
+curl -s -X POST "https://faceless.so/api/v1/ads/briefs" \
+  -H "Authorization: Bearer $FACELESS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"adId":"2716161098763684","resultToken":"22df1b25-533f-4bd7-862a-aedc4a4ea0cc","target":"product-video","brand":{"name":"Acme Coffee","description":"Small-batch coffee beans roasted to order and shipped within two days."}}'
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "brief": {
+      "hook": "Your coffee was roasted months ago",
+      "benefit": "Beans roasted the day you order them, at your door two days later.",
+      "script": "Your coffee was roasted months ago. Ours is roasted when you order. It reaches you two days later. Taste the difference.",
+      "visualDirection": "Close-ups of beans leaving the roaster, a kraft bag being sealed, a morning pour.",
+      "cta": "Order a fresh bag"
+    },
+    "source": {
+      "adId": "2716161098763684",
+      "pageName": "Example brand",
+      "sourceUrl": "https://www.facebook.com/ads/library/?id=2716161098763684"
     }
   }
 }
